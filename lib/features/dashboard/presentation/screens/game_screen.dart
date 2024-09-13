@@ -428,9 +428,14 @@ class GamePainter extends CustomPainter {
       ..color = Colors.blue
       ..style = PaintingStyle.fill;
 
+    final Paint dotPainter = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.fill;
+
     // Draw current player
     canvas.drawCircle(currentPlayer.position, 10,
         currentPlayer.isChaser ? chaserPaint : runnerPaint);
+    canvas.drawCircle(currentPlayer.position, 3, dotPainter);
 
     // Draw other players
     players.forEach((id, player) {
