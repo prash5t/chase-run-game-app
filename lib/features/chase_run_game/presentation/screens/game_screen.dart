@@ -39,6 +39,8 @@ class _GameScreenState extends State<GameScreen> {
     socket.onConnect((_) {
       print('Connected to server');
       myId = socket.id;
+      // Add this line to join the game when connected
+      socket.emit('joinGame');
     });
 
     socket.on('updatePlayers', (data) {
@@ -73,6 +75,12 @@ class _GameScreenState extends State<GameScreen> {
     socket.on('playerCaught', (_) {
       isGamePaused = true;
       startCountdown();
+    });
+
+    // Add a new event handler for player joined confirmation
+    socket.on('playerJoined', (data) {
+      print('Player joined: $data');
+      // You can add any additional logic here if needed
     });
   }
 
@@ -158,74 +166,94 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SizedBox(
-                width: gameViewSize.width,
-                height: gameViewSize.height,
-                child: Stack(
-                  children: [
-                    CustomPaint(
-                      painter: FootballFieldPainter(),
-                      size: gameViewSize,
-                    ),
-                    if (players.isNotEmpty)
+    return WillPopScope(
+      onWillPop: () async {
+        // Leave the game when going back
+        socket.emit('leaveGame');
+        socket.disconnect();
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Chase Run Game'),
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () {
+              // Leave the game and go back to dashboard
+              socket.emit('leaveGame');
+              socket.disconnect();
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  width: gameViewSize.width,
+                  height: gameViewSize.height,
+                  child: Stack(
+                    children: [
                       CustomPaint(
-                        painter: GamePainter(players[myId]!, players),
+                        painter: FootballFieldPainter(),
                         size: gameViewSize,
                       ),
-                    if (showAnimation)
-                      Center(
-                        child: Container(
-                          padding: EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(8),
+                      if (players.isNotEmpty)
+                        CustomPaint(
+                          painter: GamePainter(players[myId]!, players),
+                          size: gameViewSize,
+                        ),
+                      if (showAnimation)
+                        Center(
+                          child: Container(
+                            padding: EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.7),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              animationText,
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold),
+                            ),
                           ),
+                        ),
+                      if (showCountdown)
+                        Center(
                           child: Text(
-                            animationText,
+                            countdown.toString(),
                             style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold),
+                              fontSize: 120,
+                              fontWeight: FontWeight.bold,
+                              color: countdownColor,
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 10.0,
+                                  color: Colors.black,
+                                  offset: Offset(5.0, 5.0),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    if (showCountdown)
-                      Center(
-                        child: Text(
-                          countdown.toString(),
-                          style: TextStyle(
-                            fontSize: 120,
-                            fontWeight: FontWeight.bold,
-                            color: countdownColor,
-                            shadows: [
-                              Shadow(
-                                blurRadius: 10.0,
-                                color: Colors.black,
-                                offset: Offset(5.0, 5.0),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Container(
-              height: joystickAreaHeight,
-              color: Colors.grey[300],
-              child: Center(
-                child: JoystickArea(
-                  onDirectionChanged: movePlayer,
+              Container(
+                height: joystickAreaHeight,
+                color: Colors.grey[300],
+                child: Center(
+                  child: JoystickArea(
+                    onDirectionChanged: movePlayer,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -233,6 +261,7 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   void dispose() {
+    socket.emit('leaveGame');
     socket.disconnect();
     super.dispose();
   }

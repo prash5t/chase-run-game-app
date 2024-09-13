@@ -7,11 +7,11 @@ Route<dynamic> onGenerateRoute(RouteSettings settings) {
   Object? argument = settings.arguments;
   switch (settings.name) {
     case AppRoutes.dashboard:
-      return MaterialPageRoute(builder: (context) => const DashboardScreen());
+      return MaterialPageRoute(builder: (context) => DashboardScreen());
     case AppRoutes.game:
       return MaterialPageRoute(builder: (context) => GameScreen());
     default:
-      return MaterialPageRoute(builder: (context) => GameScreen());
+      return MaterialPageRoute(builder: (context) => DashboardScreen());
     // return MaterialPageRoute(builder: (context) => const DashboardScreen());
   }
 }
