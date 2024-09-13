@@ -226,24 +226,97 @@ class _GameScreenState extends State<GameScreen> {
   }
 }
 
-class JoystickArea extends StatelessWidget {
+class JoystickArea extends StatefulWidget {
   final Function(Offset) onDirectionChanged;
 
   const JoystickArea({Key? key, required this.onDirectionChanged})
       : super(key: key);
 
   @override
+  _JoystickAreaState createState() => _JoystickAreaState();
+}
+
+class _JoystickAreaState extends State<JoystickArea> {
+  Offset _startPosition = Offset.zero;
+  Offset _currentPosition = Offset.zero;
+  bool _isDragging = false;
+
+  void _updatePosition(Offset position) {
+    final delta = position - _startPosition;
+    final maxRadius =
+        75.0; // Adjust this value to change the maximum joystick reach
+    final distance = delta.distance;
+    final direction = delta / distance;
+
+    setState(() {
+      if (distance <= maxRadius) {
+        _currentPosition = delta;
+      } else {
+        _currentPosition = direction * maxRadius;
+      }
+    });
+
+    // Normalize the position to values between -1 and 1
+    final normalizedPosition = Offset(
+      _currentPosition.dx / maxRadius,
+      _currentPosition.dy / maxRadius,
+    );
+    widget.onDirectionChanged(normalizedPosition);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 200,
-      height: 200,
-      child: Joystick(
-        mode: JoystickMode.all,
-        period: Duration(milliseconds: 50),
-        listener: (details) {
-          onDirectionChanged(
-              Offset(details.x, details.y)); // or details.position
-        },
+    return GestureDetector(
+      onPanStart: (details) {
+        _isDragging = true;
+        _startPosition = details.localPosition;
+        _updatePosition(details.localPosition);
+      },
+      onPanUpdate: (details) {
+        if (_isDragging) {
+          _updatePosition(details.localPosition);
+        }
+      },
+      onPanEnd: (_) {
+        _isDragging = false;
+        setState(() {
+          _currentPosition = Offset.zero;
+        });
+        widget.onDirectionChanged(Offset.zero);
+      },
+      child: Container(
+        width: 200,
+        height: 200,
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.5),
+          shape: BoxShape.circle,
+        ),
+        child: Stack(
+          children: [
+            Center(
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.grey[700],
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Positioned(
+              left: _currentPosition.dx + 100 - 25,
+              top: _currentPosition.dy + 100 - 25,
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
