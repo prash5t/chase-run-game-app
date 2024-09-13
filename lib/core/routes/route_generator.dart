@@ -1,6 +1,6 @@
 import 'package:chase_run_game/core/routes/app_routes.dart';
 import 'package:chase_run_game/features/dashboard/presentation/screens/dashboard_screen.dart';
-import 'package:chase_run_game/features/dashboard/presentation/screens/game_screen.dart';
+import 'package:chase_run_game/features/chase_run_game/presentation/screens/game_screen.dart';
 import 'package:flutter/material.dart';
 
 Route<dynamic> onGenerateRoute(RouteSettings settings) {

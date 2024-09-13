@@ -23,6 +23,7 @@ class _GameScreenState extends State<GameScreen> {
   late Size gameViewSize;
   bool showCountdown = false;
   Color countdownColor = Colors.white;
+  bool isGamePaused = false;
 
   @override
   void initState() {
@@ -59,12 +60,18 @@ class _GameScreenState extends State<GameScreen> {
             showAnimationWithText('You are now a runner!');
           }
           chaser = newChaser;
+          isGamePaused = true;
           startCountdown();
         }
       });
     });
 
     socket.on('gameStart', (_) {
+      startCountdown();
+    });
+
+    socket.on('playerCaught', (_) {
+      isGamePaused = true;
       startCountdown();
     });
   }
@@ -102,6 +109,7 @@ class _GameScreenState extends State<GameScreen> {
         } else {
           isGameStarting = false;
           showCountdown = false;
+          isGamePaused = false;
           timer.cancel();
           spawnPlayersRandomly();
         }
@@ -119,7 +127,11 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void movePlayer(Offset direction) {
-    if (myId != null && players.containsKey(myId)) {
+    if (myId != null &&
+        players.containsKey(myId) &&
+        !isGamePaused &&
+        !isGameStarting &&
+        !showCountdown) {
       final currentPosition = players[myId]!.position;
       final newPosition = Offset(
         (currentPosition.dx + direction.dx * 5)
